@@ -109,8 +109,7 @@ class MongoEnvTestCase(TestCase):
         # Confirm that the setting is expected before switching.
         self.assertEqual(pymongoenv.mongo_cn, self.initial_cn)
 
-        pymongoenv.change_db(new_cn_name, self.initial_dbname,
-                             ssl=self.initial_ssl)
+        pymongoenv.change_db(new_cn_name, self.initial_dbname, self.initial_ssl)
 
         self.assertEqual(pymongoenv.mongo_cn, new_cn_name)
         # dbname and ssl settings should not have changed
@@ -129,8 +128,7 @@ class MongoEnvTestCase(TestCase):
         # Confirm that the setting is expected before switching.
         self.assertEqual(pymongoenv.mongo_cn, self.initial_cn)
 
-        pymongoenv.change_db(self.initial_cn, new_dbname,
-                             ssl=self.initial_ssl)
+        pymongoenv.change_db(self.initial_cn, new_dbname, self.initial_ssl)
 
         self.assertEqual(pymongoenv.mongo_dbname, new_dbname)
         # cn and ssl settings should not have changed
@@ -150,8 +148,7 @@ class MongoEnvTestCase(TestCase):
         self.assertEqual(pymongoenv.mongo_ssl, self.initial_ssl)
         self.assertNotEqual(pymongoenv.mongo_ssl, new_ssl)
 
-        pymongoenv.change_db(self.initial_cn, self.initial_dbname,
-                             ssl=new_ssl)
+        pymongoenv.change_db(self.initial_cn, self.initial_dbname, new_ssl)
 
         self.assertEqual(pymongoenv.mongo_ssl, new_ssl)
         # cn and dbname settings should not have changed

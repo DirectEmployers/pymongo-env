@@ -16,7 +16,7 @@ mongo_dbname = secrets.MONGO_DBNAME
 mongo_ssl = getattr(secrets, 'MONGO_SSL', False)
 
 
-def change_db(cn, dbname, ssl=False):
+def change_db(cn, dbname, ssl_setting):
     """
     Switch database connection information process wide.
 
@@ -24,10 +24,12 @@ def change_db(cn, dbname, ssl=False):
     connection info.
     """
     global mongo_cn, mongo_dbname, mongo_ssl
+
     mongo_cn = cn
     mongo_dbname = dbname
-    mongo_ssl = ssl
-    secrets.MONGO_SSL = ssl
+    mongo_ssl = ssl_setting
+
+    secrets.MONGO_SSL = ssl_setting
     secrets.MONGO_HOST = cn
     secrets.MONGO_DBNAME = dbname
 
@@ -86,12 +88,12 @@ def production_access():
             useful_data = access.db.analytics.find({...})
 
     """
-    with db_access('PRODUCTION', True) as access:
+    with db_access('PRODUCTION') as access:
         yield access
 
 
 @contextmanager
-def db_access(prefix, ssl=False):
+def db_access(prefix):
     """
     Access servers for a specified environment in a limited scope.
 
@@ -100,7 +102,6 @@ def db_access(prefix, ssl=False):
             useful_data = access.db.analytics.find({...})
 
     :param prefix: The secrets prefix of the environment you want to access.
-    :param ssl: Boolean for if the environment requires a secure connection.
 
     """
     if hasattr(secrets, 'MONGO_CN'):
@@ -108,14 +109,17 @@ def db_access(prefix, ssl=False):
     else:
         old_host = secrets.MONGO_HOST
     old_dbname = secrets.MONGO_DBNAME
+    old_ssl = secrets.MONGO_SSL
+
     if hasattr(secrets, prefix + '_MONGO_CN'):
         new_cn = getattr(secrets, prefix + '_MONGO_CN')
     else:
         new_cn = getattr(secrets, prefix + '_MONGO_HOST')
     new_dbname = getattr(secrets, prefix + '_MONGO_DBNAME')
+    new_ssl = getattr(secrets, prefix + '_MONGO_SSL', False)
 
     try:
-        change_db(new_cn, new_dbname, ssl)
+        change_db(new_cn, new_dbname, new_ssl)
         db_access = connect_db()
         yield db_access
     finally:
@@ -123,7 +127,7 @@ def db_access(prefix, ssl=False):
         db_access.client.close()
         db_access.client = None
         db_access.db = None
-        change_db(old_host, old_dbname, ssl)
+        change_db(old_host, old_dbname, old_ssl)
 
 
 @contextmanager
@@ -142,6 +146,6 @@ def production_db():
 
 
 @contextmanager
-def context_db(prefix, ssl=False):
-    with db_access(prefix, ssl) as access:
+def context_db(prefix):
+    with db_access(prefix) as access:
         yield access.db
