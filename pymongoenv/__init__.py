@@ -1,33 +1,42 @@
-from contextlib import contextmanager
-
-from pymongo import MongoClient
 import ssl
-import settings
+from contextlib import contextmanager
+from pymongo import MongoClient
 
-if hasattr(settings, 'MONGO_CN'):
-    mongo_cn = settings.MONGO_CN
+try:
+    import secrets
+except ImportError:
+    # Provide some meaningless base secrets for compatibility purposes.
+    import base_secrets as secrets
+
+if hasattr(secrets, 'MONGO_CN'):
+    mongo_cn = secrets.MONGO_CN
 else:
-    mongo_cn = settings.MONGO_HOST
-mongo_dbname = settings.MONGO_DBNAME
-mongo_ssl = getattr(settings, 'MONGO_SSL', False)
+    mongo_cn = secrets.MONGO_HOST
+mongo_dbname = secrets.MONGO_DBNAME
+mongo_ssl = getattr(secrets, 'MONGO_SSL', False)
 
 
-def change_db(cn, dbname, ssl=False):
-    """Switch database connection information process wide.
+def change_db(cn, dbname, ssl_setting):
+    """
+    Switch database connection information process wide.
 
     DbAccess objects created subsequent to this call will use the new
     connection info.
     """
-    global mongo_cn, mongo_dbname
+    global mongo_cn, mongo_dbname, mongo_ssl
+
     mongo_cn = cn
     mongo_dbname = dbname
-    settings.MONGO_SSL = ssl
-    settings.MONGO_HOST = cn
-    settings.MONGO_DBNAME = dbname
+    mongo_ssl = ssl_setting
+
+    secrets.MONGO_SSL = ssl_setting
+    secrets.MONGO_HOST = cn
+    secrets.MONGO_DBNAME = dbname
 
 
 def connect_db():
-    """Connect to a MongoDB instance.
+    """
+    Connect to a MongoDB instance.
 
     Uses local secrets to connect to MongoDB instances.
 
@@ -35,6 +44,7 @@ def connect_db():
 
     This takes care of redirecting test data to a separate database if
     the development environment is configured correctly.
+
     """
     global mongo_cn, mongo_dbname, mongo_ssl
 
@@ -70,30 +80,46 @@ class DbAccess(object):
 
 @contextmanager
 def production_access():
-    with db_access('PRODUCTION', True) as access:
+    """
+    Access the production servers in a limited scope.
+
+    i.e.
+        with production_access() as access:
+            useful_data = access.db.analytics.find({...})
+
+    """
+    with db_access('PRODUCTION') as access:
         yield access
 
 
 @contextmanager
-def db_access(prefix, ssl=False):
-    """Access production servers in a limited scope.
+def db_access(prefix):
+    """
+    Access servers for a specified environment in a limited scope.
 
     i.e.
-        with production_access() as db_access:
-            useful_data = db_access.db.analytics.find({...})
+        with db_access() as access:
+            useful_data = access.db.analytics.find({...})
+
+    :param prefix: The secrets prefix of the environment you want to access.
+
     """
-    if hasattr(settings, 'MONGO_CN'):
-        old_host = settings.MONGO_CN
+    if hasattr(secrets, 'MONGO_CN'):
+        old_host = secrets.MONGO_CN
     else:
-        old_host = settings.MONGO_HOST
-    old_dbname = settings.MONGO_DBNAME
-    if hasattr(settings, prefix + '_MONGO_CN'):
-        new_cn = getattr(settings, prefix + '_MONGO_CN')
+        old_host = secrets.MONGO_HOST
+    old_dbname = secrets.MONGO_DBNAME
+    old_ssl = secrets.MONGO_SSL
+
+    if hasattr(secrets, prefix + '_MONGO_CN'):
+        new_cn = getattr(secrets, prefix + '_MONGO_CN')
     else:
-        new_cn = getattr(settings, prefix + '_MONGO_HOST')
-    new_dbname = getattr(settings, prefix + '_MONGO_DBNAME')
+        new_cn = getattr(secrets, prefix + '_MONGO_HOST')
+    new_dbname = getattr(secrets, prefix + '_MONGO_DBNAME')
+    new_ssl = getattr(secrets, prefix + '_MONGO_SSL', False)
+
     try:
-        change_db(new_cn, new_dbname, ssl)
+        change_db(new_cn, new_dbname, new_ssl)
         db_access = connect_db()
         yield db_access
     finally:
@@ -101,23 +127,25 @@ def db_access(prefix, ssl=False):
         db_access.client.close()
         db_access.client = None
         db_access.db = None
-        change_db(old_host, old_dbname, ssl)
+        change_db(old_host, old_dbname, old_ssl)
 
 
 @contextmanager
 def production_db():
-    """Access just the production database object in a limited scope.
+    """
+    Access just the production database object in a limited scope.
 
     i.e.
         with production_db() as prod_db:
             useful_data = prod_db.analytics.find({...})
         del prod_db
+
     """
     with production_access() as db_access:
         yield db_access.db
 
 
 @contextmanager
-def context_db(prefix, ssl=False):
-    with db_access(prefix, ssl) as access:
+def context_db(prefix):
+    with db_access(prefix) as access:
         yield access.db
