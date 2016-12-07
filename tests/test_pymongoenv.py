@@ -1,7 +1,7 @@
 from mock import patch
 from unittest import TestCase
 
-import base_settings
+import base_secrets
 
 
 class TestMongoClient(object):
@@ -16,7 +16,7 @@ class TestMongoClient(object):
 class MongoEnvTestCase(TestCase):
     def setUp(self):
         """
-        Do all the initial configuration of the settings since base_settings
+        Do all the initial configuration of the settings since base_secrets
         is just an empty file.
 
         """
@@ -26,30 +26,30 @@ class MongoEnvTestCase(TestCase):
         self.prefix = 'APREFIX'
         self.prod_prefix = 'PRODUCTION'
 
-        setattr(base_settings, 'MONGO_CN', self.initial_cn)
-        setattr(base_settings, 'MONGO_DBNAME', self.initial_dbname)
-        setattr(base_settings, 'MONGO_SSL', self.initial_ssl)
+        setattr(base_secrets, 'MONGO_CN', self.initial_cn)
+        setattr(base_secrets, 'MONGO_DBNAME', self.initial_dbname)
+        setattr(base_secrets, 'MONGO_SSL', self.initial_ssl)
 
     def tearDown(self):
         """
         Remove all the custom configuration that has been done to confirm that
-        base_settings aren't carried over between tests.
+        base_secrets aren't carried over between tests.
 
         """
         set_attrs = ['MONGO_CN', 'MONGO_DBNAME', 'MONGO_SSL', 'MONGO_HOST']
         for attr in set_attrs:
-            if hasattr(base_settings, attr):
-                delattr(base_settings, attr)
+            if hasattr(base_secrets, attr):
+                delattr(base_secrets, attr)
             for prefix in [self.prefix, self.prod_prefix]:
                 prefixed_attr = "%s_%s" % (prefix, attr)
-                if hasattr(base_settings, prefixed_attr):
-                    delattr(base_settings, prefixed_attr)
+                if hasattr(base_secrets, prefixed_attr):
+                    delattr(base_secrets, prefixed_attr)
 
     @staticmethod
     def import_and_reload_pymongoenv():
         """
         Imports pymongoenv and ensures that it's been reloaded so it's
-        pulling the globals from the most recent version of the base_settings
+        pulling the globals from the most recent version of the base_secrets
         file.
 
         """
@@ -60,7 +60,7 @@ class MongoEnvTestCase(TestCase):
     def test_init(self):
         """
         Settings should be properly initialized to reflect defaults in the
-        settings.py/base_settings.py files.
+        settings.py/base_secrets.py files.
 
         """
         pymongoenv = self.import_and_reload_pymongoenv()
@@ -77,7 +77,7 @@ class MongoEnvTestCase(TestCase):
 
         """
         mongo_host = 'TEST_HOST'
-        setattr(base_settings, 'MONGO_HOST', mongo_host)
+        setattr(base_secrets, 'MONGO_HOST', mongo_host)
 
         pymongoenv = self.import_and_reload_pymongoenv()
 
@@ -90,8 +90,8 @@ class MongoEnvTestCase(TestCase):
 
         """
         mongo_host = 'TEST_HOST'
-        setattr(base_settings, 'MONGO_HOST', mongo_host)
-        delattr(base_settings, 'MONGO_CN')
+        setattr(base_secrets, 'MONGO_HOST', mongo_host)
+        delattr(base_secrets, 'MONGO_CN')
 
         pymongoenv = self.import_and_reload_pymongoenv()
 
@@ -173,8 +173,8 @@ class MongoEnvTestCase(TestCase):
         prefixed_cn = 'prefixed_cn'
         prefixed_dbname = 'prefixed_dbname'
 
-        setattr(base_settings, '%s_%s' % (self.prefix, 'MONGO_CN'), prefixed_cn)
-        setattr(base_settings, '%s_%s' % (self.prefix, 'MONGO_DBNAME'),
+        setattr(base_secrets, '%s_%s' % (self.prefix, 'MONGO_CN'), prefixed_cn)
+        setattr(base_secrets, '%s_%s' % (self.prefix, 'MONGO_DBNAME'),
                 prefixed_dbname)
 
         with pymongoenv.db_access(self.prefix) as access:
@@ -206,9 +206,9 @@ class MongoEnvTestCase(TestCase):
         production_cn = 'production_cn'
         production_dbname = 'production_dbname'
 
-        setattr(base_settings, '%s_%s' % (self.prod_prefix, 'MONGO_CN'),
+        setattr(base_secrets, '%s_%s' % (self.prod_prefix, 'MONGO_CN'),
                 production_cn)
-        setattr(base_settings, '%s_%s' % (self.prod_prefix, 'MONGO_DBNAME'),
+        setattr(base_secrets, '%s_%s' % (self.prod_prefix, 'MONGO_DBNAME'),
                 production_dbname)
 
         with pymongoenv.production_access() as access:
@@ -240,9 +240,9 @@ class MongoEnvTestCase(TestCase):
         production_cn = 'production_cn'
         production_dbname = 'production_dbname'
 
-        setattr(base_settings, '%s_%s' % (self.prod_prefix, 'MONGO_CN'),
+        setattr(base_secrets, '%s_%s' % (self.prod_prefix, 'MONGO_CN'),
                 production_cn)
-        setattr(base_settings, '%s_%s' % (self.prod_prefix, 'MONGO_DBNAME'),
+        setattr(base_secrets, '%s_%s' % (self.prod_prefix, 'MONGO_DBNAME'),
                 production_dbname)
 
         with pymongoenv.production_db() as db:
@@ -270,8 +270,8 @@ class MongoEnvTestCase(TestCase):
         prefixed_cn = 'context_prefixed_cn'
         prefixed_dbname = 'context_prefixed_dbname'
 
-        setattr(base_settings, '%s_%s' % (self.prefix, 'MONGO_CN'), prefixed_cn)
-        setattr(base_settings, '%s_%s' % (self.prefix, 'MONGO_DBNAME'),
+        setattr(base_secrets, '%s_%s' % (self.prefix, 'MONGO_CN'), prefixed_cn)
+        setattr(base_secrets, '%s_%s' % (self.prefix, 'MONGO_DBNAME'),
                 prefixed_dbname)
 
         with pymongoenv.db_access(self.prefix) as access:

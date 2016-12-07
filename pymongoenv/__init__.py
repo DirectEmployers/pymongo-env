@@ -3,17 +3,17 @@ from contextlib import contextmanager
 from pymongo import MongoClient
 
 try:
-    import settings
+    import secrets
 except ImportError:
-    # Provide some meaningless base settings for compatibility purposes.
-    import base_settings as settings
+    # Provide some meaningless base secrets for compatibility purposes.
+    import base_secrets as secrets
 
-if hasattr(settings, 'MONGO_CN'):
-    mongo_cn = settings.MONGO_CN
+if hasattr(secrets, 'MONGO_CN'):
+    mongo_cn = secrets.MONGO_CN
 else:
-    mongo_cn = settings.MONGO_HOST
-mongo_dbname = settings.MONGO_DBNAME
-mongo_ssl = getattr(settings, 'MONGO_SSL', False)
+    mongo_cn = secrets.MONGO_HOST
+mongo_dbname = secrets.MONGO_DBNAME
+mongo_ssl = getattr(secrets, 'MONGO_SSL', False)
 
 
 def change_db(cn, dbname, ssl=False):
@@ -27,16 +27,16 @@ def change_db(cn, dbname, ssl=False):
     mongo_cn = cn
     mongo_dbname = dbname
     mongo_ssl = ssl
-    settings.MONGO_SSL = ssl
-    settings.MONGO_HOST = cn
-    settings.MONGO_DBNAME = dbname
+    secrets.MONGO_SSL = ssl
+    secrets.MONGO_HOST = cn
+    secrets.MONGO_DBNAME = dbname
 
 
 def connect_db():
     """
     Connect to a MongoDB instance.
 
-    Uses local settings to connect to MongoDB instances.
+    Uses local secrets to connect to MongoDB instances.
 
     For code running in production: db = connect_db().db
 
@@ -99,20 +99,20 @@ def db_access(prefix, ssl=False):
         with db_access() as access:
             useful_data = access.db.analytics.find({...})
 
-    :param prefix: The settings prefix of the environment you want to access.
+    :param prefix: The secrets prefix of the environment you want to access.
     :param ssl: Boolean for if the environment requires a secure connection.
 
     """
-    if hasattr(settings, 'MONGO_CN'):
-        old_host = settings.MONGO_CN
+    if hasattr(secrets, 'MONGO_CN'):
+        old_host = secrets.MONGO_CN
     else:
-        old_host = settings.MONGO_HOST
-    old_dbname = settings.MONGO_DBNAME
-    if hasattr(settings, prefix + '_MONGO_CN'):
-        new_cn = getattr(settings, prefix + '_MONGO_CN')
+        old_host = secrets.MONGO_HOST
+    old_dbname = secrets.MONGO_DBNAME
+    if hasattr(secrets, prefix + '_MONGO_CN'):
+        new_cn = getattr(secrets, prefix + '_MONGO_CN')
     else:
-        new_cn = getattr(settings, prefix + '_MONGO_HOST')
-    new_dbname = getattr(settings, prefix + '_MONGO_DBNAME')
+        new_cn = getattr(secrets, prefix + '_MONGO_HOST')
+    new_dbname = getattr(secrets, prefix + '_MONGO_DBNAME')
 
     try:
         change_db(new_cn, new_dbname, ssl)
