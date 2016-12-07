@@ -1,8 +1,12 @@
-from contextlib import contextmanager
-
-from pymongo import MongoClient
 import ssl
-import settings
+from contextlib import contextmanager
+from pymongo import MongoClient
+
+try:
+    import settings
+except ImportError:
+    # Provide some meaningless base settings for compatibility purposes.
+    import base_settings as settings
 
 if hasattr(settings, 'MONGO_CN'):
     mongo_cn = settings.MONGO_CN
@@ -13,28 +17,32 @@ mongo_ssl = getattr(settings, 'MONGO_SSL', False)
 
 
 def change_db(cn, dbname, ssl=False):
-    """Switch database connection information process wide.
+    """
+    Switch database connection information process wide.
 
     DbAccess objects created subsequent to this call will use the new
     connection info.
     """
-    global mongo_cn, mongo_dbname
+    global mongo_cn, mongo_dbname, mongo_ssl
     mongo_cn = cn
     mongo_dbname = dbname
+    mongo_ssl = ssl
     settings.MONGO_SSL = ssl
     settings.MONGO_HOST = cn
     settings.MONGO_DBNAME = dbname
 
 
 def connect_db():
-    """Connect to a MongoDB instance.
+    """
+    Connect to a MongoDB instance.
 
-    Uses local secrets to connect to MongoDB instances.
+    Uses local settings to connect to MongoDB instances.
 
     For code running in production: db = connect_db().db
 
     This takes care of redirecting test data to a separate database if
     the development environment is configured correctly.
+
     """
     global mongo_cn, mongo_dbname, mongo_ssl
 
@@ -70,17 +78,30 @@ class DbAccess(object):
 
 @contextmanager
 def production_access():
+    """
+    Access the production servers in a limited scope.
+
+    i.e.
+        with production_access() as access:
+            useful_data = access.db.analytics.find({...})
+
+    """
     with db_access('PRODUCTION', True) as access:
         yield access
 
 
 @contextmanager
 def db_access(prefix, ssl=False):
-    """Access production servers in a limited scope.
+    """
+    Access servers for a specified environment in a limited scope.
 
     i.e.
-        with production_access() as db_access:
-            useful_data = db_access.db.analytics.find({...})
+        with db_access() as access:
+            useful_data = access.db.analytics.find({...})
+
+    :param prefix: The settings prefix of the environment you want to access.
+    :param ssl: Boolean for if the environment requires a secure connection.
+
     """
     if hasattr(settings, 'MONGO_CN'):
         old_host = settings.MONGO_CN
@@ -92,6 +113,7 @@ def db_access(prefix, ssl=False):
     else:
         new_cn = getattr(settings, prefix + '_MONGO_HOST')
     new_dbname = getattr(settings, prefix + '_MONGO_DBNAME')
+
     try:
         change_db(new_cn, new_dbname, ssl)
         db_access = connect_db()
@@ -106,12 +128,14 @@ def db_access(prefix, ssl=False):
 
 @contextmanager
 def production_db():
-    """Access just the production database object in a limited scope.
+    """
+    Access just the production database object in a limited scope.
 
     i.e.
         with production_db() as prod_db:
             useful_data = prod_db.analytics.find({...})
         del prod_db
+
     """
     with production_access() as db_access:
         yield db_access.db
