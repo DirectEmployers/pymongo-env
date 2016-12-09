@@ -39,6 +39,3 @@ class MongoTestMixin(object):
     def tearDown(self):
         for collection in self.all_collections:
             collection.delete_many({})
-
-    def fail(self):
-        raise NotImplemented
