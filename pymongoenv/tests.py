@@ -14,18 +14,18 @@ class MongoTestMixin(object):
         change_db(secrets.TEST_MONGO_HOST, secrets.TEST_MONGO_DBNAME,
                   secrets.TEST_MONGO_SSL)
         self.db_access = connect_db()
-
-        self.db = self.db_access.db
         self.all_collections = []
+        self.db = self.db_access.db
         for collection_name in self.collection_names:
-            setattr(self, collection_name, getattr(self.db, collection_name))
-            self.all_collections.append(getattr(self, collection_name))
+            setattr(self, collection_name, self.db[collection_name])
+            self.all_collections.append(self.db[collection_name])
 
         counts = {
             c.full_name: c.count()
             for c in self.all_collections
             if c.count() > 0
         }
+
         if len(counts):
             message = (
                 "Mongo server at {db_access} contains "
