@@ -77,6 +77,16 @@ class DbAccess(object):
     def __str__(self):
         return "<DbAccess %r / %r>" % (self.client.host, self.db.name)
 
+    def __del__(self):
+        self.close()
+
+    def close(self):
+        # Note that this does not protect the db from future operations.
+        if self.client:
+            self.client.close()
+        self.client = None
+        self.db = None
+
 
 @contextmanager
 def production_access():
@@ -123,10 +133,7 @@ def db_access(prefix):
         db_access = connect_db()
         yield db_access
     finally:
-        # Note that this does not protect the db from future operations.
-        db_access.client.close()
-        db_access.client = None
-        db_access.db = None
+        del db_access
         change_db(old_host, old_dbname, old_ssl)
 
 
