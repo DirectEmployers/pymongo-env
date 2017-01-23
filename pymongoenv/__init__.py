@@ -8,10 +8,7 @@ except ImportError:
     # Provide some meaningless base secrets for compatibility purposes.
     import base_secrets as secrets
 
-if hasattr(secrets, 'MONGO_CN'):
-    mongo_cn = secrets.MONGO_CN
-else:
-    mongo_cn = secrets.MONGO_HOST
+mongo_cn = secrets.MONGO_CN
 mongo_dbname = secrets.MONGO_DBNAME
 mongo_ssl = getattr(secrets, 'MONGO_SSL', False)
 
@@ -30,7 +27,7 @@ def change_db(cn, dbname, ssl_setting):
     mongo_ssl = ssl_setting
 
     secrets.MONGO_SSL = ssl_setting
-    secrets.MONGO_HOST = cn
+    secrets.MONGO_CN = cn
     secrets.MONGO_DBNAME = dbname
 
 
@@ -104,17 +101,11 @@ def db_access(prefix):
     :param prefix: The secrets prefix of the environment you want to access.
 
     """
-    if hasattr(secrets, 'MONGO_CN'):
-        old_host = secrets.MONGO_CN
-    else:
-        old_host = secrets.MONGO_HOST
+    old_host = secrets.MONGO_CN
     old_dbname = secrets.MONGO_DBNAME
     old_ssl = secrets.MONGO_SSL
 
-    if hasattr(secrets, prefix + '_MONGO_CN'):
-        new_cn = getattr(secrets, prefix + '_MONGO_CN')
-    else:
-        new_cn = getattr(secrets, prefix + '_MONGO_HOST')
+    new_cn = getattr(secrets, prefix + '_MONGO_CN')
     new_dbname = getattr(secrets, prefix + '_MONGO_DBNAME')
     new_ssl = getattr(secrets, prefix + '_MONGO_SSL', False)
 
