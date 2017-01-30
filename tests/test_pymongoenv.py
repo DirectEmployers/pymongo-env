@@ -36,7 +36,7 @@ class MongoEnvTestCase(TestCase):
         base_secrets aren't carried over between tests.
 
         """
-        set_attrs = ['MONGO_CN', 'MONGO_DBNAME', 'MONGO_SSL', 'MONGO_HOST']
+        set_attrs = ['MONGO_CN', 'MONGO_DBNAME', 'MONGO_SSL']
         for attr in set_attrs:
             if hasattr(base_secrets, attr):
                 delattr(base_secrets, attr)
@@ -68,34 +68,6 @@ class MongoEnvTestCase(TestCase):
         self.assertEqual(pymongoenv.mongo_cn, self.initial_cn)
         self.assertEqual(pymongoenv.mongo_dbname, self.initial_dbname)
         self.assertEqual(pymongoenv.mongo_ssl, self.initial_ssl)
-
-    def test_init_cluster_over_host(self):
-        """
-        When both a mongo host (settings.MONGO_HOST) and a
-        mongo cluster (settings.MONGO_CN) are present, always choose
-        the cluster.
-
-        """
-        mongo_host = 'TEST_HOST'
-        setattr(base_secrets, 'MONGO_HOST', mongo_host)
-
-        pymongoenv = self.import_and_reload_pymongoenv()
-
-        self.assertEqual(pymongoenv.mongo_cn, self.initial_cn)
-
-    def test_init_no_cluster(self):
-        """
-        When a mongo cluster setting (settings.MONGO_CN) isn't present,
-        always fall back to the mongo host (settings.MONGO_HOST) setting.
-
-        """
-        mongo_host = 'TEST_HOST'
-        setattr(base_secrets, 'MONGO_HOST', mongo_host)
-        delattr(base_secrets, 'MONGO_CN')
-
-        pymongoenv = self.import_and_reload_pymongoenv()
-
-        self.assertEqual(pymongoenv.mongo_cn, mongo_host)
 
     def test_change_db_cluster(self):
         """
