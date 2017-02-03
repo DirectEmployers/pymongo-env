@@ -13,7 +13,14 @@ class MongoTestMixin(object):
     def setUp(self):
         change_db(secrets.TEST_MONGO_HOST, secrets.TEST_MONGO_DBNAME,
                   secrets.TEST_MONGO_SSL)
+        print secrets.TEST_MONGO_HOST
+        print secrets.TEST_MONGO_DBNAME
+        print secrets.TEST_MONGO_SSL
+
         self.db_access = connect_db()
+
+        print self.db_access.db
+
         self.all_collections = []
         self.db = self.db_access.db
         for collection_name in self.collection_names:
