@@ -8,7 +8,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as readme:
 
 setup(
     name='pymongo-env',
-    version='0.0.3',
+    version='0.0.4',
 
     description='An overlay for MongoDB that allows for easy environment '
                 'switching.',
