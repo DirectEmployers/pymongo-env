@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from pymongo import MongoClient
 
 try:
-    import de_secrets
+    import de_secrets as secrets
 except ImportError:
     # Provide some meaningless base secrets for compatibility purposes.
     import base_secrets as secrets
